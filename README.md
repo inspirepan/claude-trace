@@ -1,5 +1,7 @@
 # claude-trace
 
+This repository is extracted from `mariozechner/lemmy` at `apps/claude-trace` and keeps the original project attribution. This fork adds support for bun-installed Claude Code while keeping the tool as a standalone repository.
+
 Record all your interactions with Claude Code as you develop your projects. See everything Claude hides: system prompts, tool outputs, and raw API data in an intuitive web interface.
 
 ## Install
