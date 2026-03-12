@@ -6,6 +6,32 @@ import path from "path";
 export interface ClaudeCommand {
 	command: string;
 	displayPath: string;
+	kind: "node-script" | "native-binary";
+}
+
+function detectClaudeKind(filePath: string): "node-script" | "native-binary" {
+	if (filePath.endsWith(".js") || filePath.endsWith(".mjs") || filePath.endsWith(".cjs")) {
+		return "node-script";
+	}
+
+	try {
+		const fd = fs.openSync(filePath, "r");
+		const buffer = Buffer.alloc(256);
+		let bytesRead = 0;
+		try {
+			bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
+		} finally {
+			fs.closeSync(fd);
+		}
+		const header = buffer.subarray(0, bytesRead).toString("utf-8");
+		if (header.startsWith("#!") && header.includes("node")) {
+			return "node-script";
+		}
+	} catch {
+		return "native-binary";
+	}
+
+	return "native-binary";
 }
 
 function resolvePath(filePath: string): string {
@@ -75,19 +101,19 @@ export function resolveClaudeCommand(customPath?: string): ClaudeCommand {
 		}
 
 		const command = extractWrappedExecutable(customPath);
-		return { command, displayPath: command };
+		return { command, displayPath: command, kind: detectClaudeKind(command) };
 	}
 
 	const pathClaude = findClaudeFromPath();
 	if (pathClaude) {
 		const command = extractWrappedExecutable(pathClaude);
-		return { command, displayPath: command };
+		return { command, displayPath: command, kind: detectClaudeKind(command) };
 	}
 
 	for (const fallbackPath of getFallbackClaudePaths()) {
 		if (fs.existsSync(fallbackPath)) {
 			const command = extractWrappedExecutable(fallbackPath);
-			return { command, displayPath: command };
+			return { command, displayPath: command, kind: detectClaudeKind(command) };
 		}
 	}
 

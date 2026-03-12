@@ -5,6 +5,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { HTMLGenerator } from "./html-generator";
 import { appendNodeOptions, resolveClaudeCommand } from "./claude";
+import { runClaudeWithProxy } from "./native-proxy";
 
 // Colors for output
 export const colors = {
@@ -134,6 +135,11 @@ async function runClaudeWithInterception(
 	const claude = resolveClaudeCommand(customClaudePath);
 	const loaderPath = getLoaderPath();
 
+	if (claude.kind === "native-binary") {
+		await runClaudeWithProxy(claude, claudeArgs, includeAllRequests, openInBrowser, logBaseName);
+		return;
+	}
+
 	log(`Using Claude binary: ${claude.displayPath}`, "blue");
 	log("Starting traffic logger...", "green");
 	console.log("");
@@ -193,6 +199,10 @@ async function runClaudeWithInterception(
 // Scenario 2: --extract-token -> launch node with token interceptor and absolute path to claude
 async function extractToken(customClaudePath?: string): Promise<void> {
 	const claude = resolveClaudeCommand(customClaudePath);
+	if (claude.kind === "native-binary") {
+		console.error("Token extraction is not supported for native Claude binaries yet.");
+		process.exit(1);
+	}
 
 	// Log to stderr so it doesn't interfere with token output
 	console.error(`Using Claude binary: ${claude.displayPath}`);
